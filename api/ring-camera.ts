@@ -27,6 +27,7 @@ import {
 import { DeepPartial, delay, logDebug, logError } from './util'
 import { Subscribed } from './subscribed'
 import { FfmpegOptions, LiveCall } from './live-call'
+import { LiveCallRingEdge } from './live-call-ring-edge'
 
 const maxSnapshotRefreshSeconds = 15,
   fullDayMs = 24 * 60 * 60 * 1000
@@ -226,6 +227,10 @@ export class RingCamera extends Subscribed {
     return this.data.alerts.connection === 'offline'
   }
 
+  get isRingEdgeEnabled() {
+    return this.data.settings.sheila_settings.local_storage_enabled === true
+  }
+
   get hasInHomeDoorbell() {
     const { chime_settings } = this.data.settings
 
@@ -330,22 +335,27 @@ export class RingCamera extends Subscribed {
   }
 
   async startLiveCall() {
-    const liveCall = await this.restClient
-      .request<LiveCallResponse>({
-        method: 'POST',
-        url: this.doorbotUrl('live_call'),
-      })
-      .catch((e) => {
-        if (e.response?.statusCode === 403) {
-          const errorMessage = `Camera ${this.name} returned 403 when starting a live stream.  This usually indicates that live streaming is blocked by Modes settings.  Check your Ring app and verify that you are able to stream from this camera with the current Modes settings.`
-          logError(errorMessage)
-          throw new Error(errorMessage)
-        }
+    // if (this.isRingEdgeEnabled || true) {
+    const auth = await this.restClient.getCurrentAuth()
+    return new LiveCallRingEdge(auth.access_token, this)
+    // }
 
-        throw e
-      })
-
-    return new LiveCall(liveCall.data.session_id, this)
+    // const liveCall = await this.restClient
+    //   .request<LiveCallResponse>({
+    //     method: 'POST',
+    //     url: this.doorbotUrl('live_call'),
+    //   })
+    //   .catch((e) => {
+    //     if (e.response?.statusCode === 403) {
+    //       const errorMessage = `Camera ${this.name} returned 403 when starting a live stream.  This usually indicates that live streaming is blocked by Modes settings.  Check your Ring app and verify that you are able to stream from this camera with the current Modes settings.`
+    //       logError(errorMessage)
+    //       throw new Error(errorMessage)
+    //     }
+    //
+    //     throw e
+    //   })
+    //
+    // return new LiveCall(liveCall.data.session_id, this)
   }
 
   private removeDingById(idToRemove: string) {

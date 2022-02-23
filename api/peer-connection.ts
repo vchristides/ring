@@ -9,7 +9,7 @@ import {
 import { Subject } from 'rxjs'
 import { logError, logInfo } from './util'
 
-const debug = false
+const debug = true
 
 export class PeerConnection {
   pc
@@ -17,6 +17,7 @@ export class PeerConnection {
   onAudioRtcp = new Subject<RtcpPacket>()
   onVideoRtp = new Subject<RtpPacket>()
   onVideoRtcp = new Subject<RtcpPacket>()
+  onIceCandidate = new Subject<RTCIceCandidate>()
   returnAudioTrack = new MediaStreamTrack({ kind: 'audio' })
 
   constructor() {
@@ -54,7 +55,9 @@ export class PeerConnection {
       })
 
     audioTransceiver.onTrack.subscribe((track) => {
+      let lastTimeStamp = 0
       track.onReceiveRtp.subscribe((rtp) => {
+        lastTimeStamp = rtp.header.timestamp
         this.onAudioRtp.next(rtp)
       })
 
@@ -89,6 +92,31 @@ export class PeerConnection {
         )
       })
     })
+    this.pc.onIceCandidate.subscribe((iceCandidate) => {
+      this.onIceCandidate.next(iceCandidate)
+    })
+
+    pc.iceConnectionStateChange.subscribe(() => {
+      console.log(
+        'iceConnectionStateChange',
+        pc.connectionState,
+        pc.iceConnectionState
+      )
+    })
+    pc.connectionStateChange.subscribe(() => {
+      console.log(
+        'connectionStateChange',
+        pc.connectionState,
+        pc.iceConnectionState
+      )
+    })
+  }
+
+  async createOffer() {
+    const offer = await this.pc.createOffer()
+    await this.pc.setLocalDescription(offer)
+
+    return offer
   }
 
   async createAnswer(offer: { type: 'offer'; sdp: string }) {
@@ -99,7 +127,16 @@ export class PeerConnection {
     return answer
   }
 
+  async acceptAnswer(answer: { type: 'answer'; sdp: string }) {
+    await this.pc.setRemoteDescription(answer)
+  }
+
   addIceCandidate(candidate: RTCIceCandidate) {
+    console.log(
+      'Got ice candidate',
+      candidate.sdpMLineIndex === 0 ? 'audio' : 'video',
+      candidate.candidate
+    )
     return this.pc.addIceCandidate(candidate)
   }
 

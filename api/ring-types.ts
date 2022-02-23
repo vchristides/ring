@@ -468,6 +468,13 @@ export interface CameraData {
     live_view_disabled?: boolean // set by modes
     motion_detection_enabled?: boolean // set by modes or Record Motion toggle
     power_mode?: 'battery' | 'wired' // some battery cams can be wired and set to operate in "wired" mode
+    sheila_settings: {
+      cv_processing_enabled: boolean | null
+      local_storage_enabled: boolean | null // true for Ring Edge devices
+    }
+    server_settings: {
+      ring_media_server_enabled: boolean
+    }
   }
   features: {
     motions_enabled: boolean
