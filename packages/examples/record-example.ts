@@ -14,9 +14,10 @@ async function example() {
       debug: true,
     }),
     cameras = await ringApi.getCameras(),
-    camera = cameras[0]
+    front = cameras[0],
+    side = cameras[1]
 
-  if (!camera) {
+  if (!front) {
     console.log('No cameras found')
     return
   }
@@ -24,8 +25,11 @@ async function example() {
   // clean/create the output directory
   await cleanOutputDirectory()
 
-  console.log(`Starting Video from ${camera.name} ...`)
-  await camera.recordToFile(path.join(outputDirectory, 'example.mp4'), 10)
+  console.log(`Starting Video from ${front.name} ...`)
+  await front.recordToFile(path.join(outputDirectory, 'front.mp4'), 10)
+  console.log('Done recording video')
+  console.log(`Starting Video from ${side.name} ...`)
+  await side.recordToFile(path.join(outputDirectory, 'side.mp4'), 10)
   console.log('Done recording video')
   process.exit(0)
 }
