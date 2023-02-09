@@ -36,25 +36,36 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.cleanOutputDirectory = exports.outputDirectory = void 0;
+exports.createOutputDirectory = exports.getUpdatedDate = void 0;
 var path = require("path");
 var util_1 = require("util");
 var fs_1 = require("fs");
 var rimraf = require('rimraf');
-exports.outputDirectory = path.join(__dirname, 'output');
-function cleanOutputDirectory() {
+now = new Date();
+logfile_name = now.getFullYear() + "-" + 0 + (now.getMonth() + 1) + "-" + 0 + now.getDate() + " " + now.getHours() + now.getMinutes() + now.getSeconds() + now.getMilliseconds();
+outputDirectory = path.join(__dirname, 'output');
+nextDirectory = path.join(outputDirectory, logfile_name);
+function getUpdatedDate() {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, (0, util_1.promisify)(rimraf)(exports.outputDirectory)];
-                case 1:
-                    _a.sent();
-                    return [4 /*yield*/, (0, util_1.promisify)(fs_1.mkdir)(exports.outputDirectory)];
-                case 2:
-                    _a.sent();
-                    return [2 /*return*/];
-            }
+            now = new Date();
+            logfile_name = now.getFullYear() + "-" + 0 + (now.getMonth() + 1) + "-" + 0 + now.getDate() + " " + now.getHours() + now.getMinutes() + now.getSeconds() + now.getMilliseconds();
+            nextDirectory = path.join(outputDirectory, logfile_name);
+            console.log("Logfile name: " + logfile_name);
+            console.log("NextDirectory name: " + nextDirectory);
+            now = new Date();
+            return [2 /*return*/];
         });
     });
 }
-exports.cleanOutputDirectory = cleanOutputDirectory;
+exports.getUpdatedDate = getUpdatedDate;
+function createOutputDirectory() {
+    return __awaiter(this, void 0, void 0, function () {
+        return __generator(this, function (_a) {
+            getUpdatedDate();
+            (0, util_1.promisify)(fs_1.mkdir)(nextDirectory);
+            return [2 /*return*/];
+        });
+    });
+}
+exports.createOutputDirectory = createOutputDirectory;

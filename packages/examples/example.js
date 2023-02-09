@@ -38,20 +38,20 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 exports.__esModule = true;
 require("dotenv/config");
 var ring_client_api_1 = require("../ring-client-api");
+//import { promisify, cleanOutputDirectory, outputDirectory } from './util'
+var util_1 = require("./util");
 var operators_1 = require("rxjs/operators");
-var fs_1 = require("fs");
-var util_1 = require("util");
+var path = require("path");
 function example() {
     return __awaiter(this, void 0, void 0, function () {
-        var env, ringApi, locations, allCameras, _loop_1, _i, locations_1, location_1, _a, locations_2, location_2, cameras, devices, _b, cameras_1, camera, _c, devices_1, device;
-        var _this = this;
+        var ringApi, locations, allCameras, _loop_1, _i, locations_1, location_1, _a, locations_2, location_2, cameras, devices, _b, cameras_1, camera, _c, devices_1, device;
         return __generator(this, function (_d) {
             switch (_d.label) {
                 case 0:
-                    env = process.env, ringApi = new ring_client_api_1.RingApi({
+                    ringApi = new ring_client_api_1.RingApi({
                         // Replace with your refresh token
-                        refreshToken: env.RING_REFRESH_TOKEN,
-                        debug: true
+                        refreshToken: process.env.RING_REFRESH_TOKEN,
+                        debug: false
                     });
                     return [4 /*yield*/, ringApi.getLocations()];
                 case 1:
@@ -59,33 +59,9 @@ function example() {
                     return [4 /*yield*/, ringApi.getCameras()];
                 case 2:
                     allCameras = _d.sent();
+                    frontcam = allCameras[0],
+                        sidecam = allCameras[1];
                     console.log("Found ".concat(locations.length, " location(s) with ").concat(allCameras.length, " camera(s)."));
-                    ringApi.onRefreshTokenUpdated.subscribe(function (_a) {
-                        var newRefreshToken = _a.newRefreshToken, oldRefreshToken = _a.oldRefreshToken;
-                        return __awaiter(_this, void 0, void 0, function () {
-                            var currentConfig, updatedConfig;
-                            return __generator(this, function (_b) {
-                                switch (_b.label) {
-                                    case 0:
-                                        console.log('Refresh Token Updated: ', newRefreshToken);
-                                        // If you are implementing a project that use `ring-client-api`, you should subscribe to onRefreshTokenUpdated and update your config each time it fires an event
-                                        // Here is an example using a .env file for configuration
-                                        if (!oldRefreshToken) {
-                                            return [2 /*return*/];
-                                        }
-                                        return [4 /*yield*/, (0, util_1.promisify)(fs_1.readFile)('.env')];
-                                    case 1:
-                                        currentConfig = _b.sent(), updatedConfig = currentConfig
-                                            .toString()
-                                            .replace(oldRefreshToken, newRefreshToken);
-                                        return [4 /*yield*/, (0, util_1.promisify)(fs_1.writeFile)('.env', updatedConfig)];
-                                    case 2:
-                                        _b.sent();
-                                        return [2 /*return*/];
-                                }
-                            });
-                        });
-                    });
                     _loop_1 = function (location_1) {
                         location_1.onConnected.pipe((0, operators_1.skip)(1)).subscribe(function (connected) {
                             var status = connected ? 'Connected to' : 'Disconnected from';
@@ -110,7 +86,6 @@ function example() {
                         camera = cameras_1[_b];
                         console.log("- ".concat(camera.id, ": ").concat(camera.name, " (").concat(camera.deviceType, ")"));
                     }
-                    console.log("\nLocation ".concat(location_2.name, " (").concat(location_2.id, ") has the following ").concat(devices.length, " device(s):"));
                     for (_c = 0, devices_1 = devices; _c < devices_1.length; _c++) {
                         device = devices_1[_c];
                         console.log("- ".concat(device.zid, ": ").concat(device.name, " (").concat(device.deviceType, ")"));
@@ -129,6 +104,14 @@ function example() {
                                         ? 'Doorbell pressed'
                                         : "Video started (".concat(notification.action, ")");
                                 console.log("".concat(event, " on ").concat(camera.name, " camera. Ding id ").concat(notification.ding.id, ".  Received at ").concat(new Date()));
+                                yield cleanOutputDirectory();
+                                console.log("Starting Video from ".concat(frontcam.name, " ..."));
+                                frontcam.recordToFile(path.join(util_1.outputDirectory, 'frontcam.mp4'), 10);
+                                console.log('Done recording video');
+                                console.log("Starting Video from ".concat(sidecam.name, " ..."));
+                                sidecam.recordToFile(path.join(util_1.outputDirectory, 'sidecam.mp4'), 10);
+                                console.log('Done recording video');
+                                process.exit(0);
                             });
                         });
                         console.log('Listening for motion and doorbell presses on your cameras.');

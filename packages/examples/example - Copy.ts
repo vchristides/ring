@@ -1,25 +1,41 @@
 import 'dotenv/config'
 import { PushNotificationAction, RingApi } from '../ring-client-api'
-//import { promisify, cleanOutputDirectory, outputDirectory } from './util'
-import { outputDirectory } from './util'
 import { skip } from 'rxjs/operators'
 import { readFile, writeFile } from 'fs'
-import * as path from 'path'
-
+import { promisify } from 'util'
 
 async function example() {
-  const ringApi = new RingApi({
+  const { env } = process,
+    ringApi = new RingApi({
       // Replace with your refresh token
-      refreshToken: process.env.RING_REFRESH_TOKEN!,
-      debug: false,
+      refreshToken: env.RING_REFRESH_TOKEN!,
+      debug: true,
     }),
     locations = await ringApi.getLocations(),
     allCameras = await ringApi.getCameras()
-	frontcam = allCameras[0],
-	sidecam = allCameras[1]
 
-  console.log(`Found ${locations.length} location(s) with ${allCameras.length} camera(s).`)
+  console.log(
+    `Found ${locations.length} location(s) with ${allCameras.length} camera(s).`
+  )
 
+  ringApi.onRefreshTokenUpdated.subscribe(
+    async ({ newRefreshToken, oldRefreshToken }) => {
+      console.log('Refresh Token Updated: ', newRefreshToken)
+
+      // If you are implementing a project that use `ring-client-api`, you should subscribe to onRefreshTokenUpdated and update your config each time it fires an event
+      // Here is an example using a .env file for configuration
+      if (!oldRefreshToken) {
+        return
+      }
+
+      const currentConfig = await promisify(readFile)('.env'),
+        updatedConfig = currentConfig
+          .toString()
+          .replace(oldRefreshToken, newRefreshToken)
+
+      await promisify(writeFile)('.env', updatedConfig)
+    }
+  )
 
   for (const location of locations) {
     location.onConnected.pipe(skip(1)).subscribe((connected) => {
@@ -40,6 +56,10 @@ async function example() {
       console.log(`- ${camera.id}: ${camera.name} (${camera.deviceType})`)
     }
 
+    console.log(
+      `\nLocation ${location.name} (${location.id}) has the following ${devices.length} device(s):`
+    )
+
     for (const device of devices) {
       console.log(`- ${device.zid}: ${device.name} (${device.deviceType})`)
     }
@@ -59,15 +79,7 @@ async function example() {
           `${event} on ${camera.name} camera. Ding id ${
             notification.ding.id
           }.  Received at ${new Date()}`
-		)
-		await cleanOutputDirectory()
-		console.log(`Starting Video from ${frontcam.name} ...`)
-		frontcam.recordToFile(path.join(outputDirectory, 'frontcam.mp4'), 10)
-		console.log('Done recording video')
-		console.log(`Starting Video from ${sidecam.name} ...`)
-		sidecam.recordToFile(path.join(outputDirectory, 'sidecam.mp4'), 10)
-		console.log('Done recording video')
-		process.exit(0)
+        )
       })
     })
 
